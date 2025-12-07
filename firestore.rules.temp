@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // TEMPORARY RULES FOR SEEDING - Allow all writes
+    // Replace these with firestore.rules after seeding is complete
+    
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

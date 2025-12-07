@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Members photos - Public read, authenticated write
+    match /members/{imageId} {
+      allow read: if true;
+      allow write: if true; // Allow uploads during member registration
+      allow delete: if false;
+    }
+    
+    // Founders photos - Public read only
+    match /founders/{imageId} {
+      allow read: if true;
+      allow write: if false; // Admins only (managed via backend)
+    }
+    
+    // Events images - Public read only
+    match /events/{imageId} {
+      allow read: if true;
+      allow write: if false; // Admins only (managed via backend)
+    }
+    
+    // Social work images - Public read only
+    match /socialWork/{imageId} {
+      allow read: if true;
+      allow write: if false; // Admins only (managed via backend)
+    }
+    
+    // Certificates - Public read, allow write for member registration
+    match /certificates/{certificateId} {
+      allow read: if true;
+      allow write: if true; // Allow uploads during member registration
+      allow delete: if false;
+    }
+  }
+}

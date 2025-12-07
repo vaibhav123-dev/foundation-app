@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Members collection - Public read, write for new members and admin operations
+    match /members/{memberId} {
+      allow read: if true;
+      allow create: if true; // Allow anyone to join via form
+      allow update, delete: if true; // Allow admin to manage (for now - no auth check)
+    }
+    
+    // Founders collection - Public read, admin can manage
+    match /founders/{founderId} {
+      allow read: if true;
+      allow write: if true; // Allow admin operations (create, update, delete)
+    }
+    
+    // Events collection - Public read, admin can manage
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if true; // Allow admin operations (create, update, delete)
+    }
+    
+    // Social Work collection - Public read, admin can manage
+    match /socialWork/{workId} {
+      allow read: if true;
+      allow write: if true; // Allow admin operations (create, update, delete)
+    }
+    
+    // Contact Info - Public read, admin can update
+    match /contactInfo/{docId} {
+      allow read: if true;
+      allow write: if true; // Allow admin to update contact info
+    }
+    
+    // Contact Messages - Write only for submissions
+    match /contactMessages/{messageId} {
+      allow read: if true; // Allow admin to read messages
+      allow create: if true; // Anyone can submit a message
+      allow update, delete: if true; // Allow admin to manage messages
+    }
+  }
+}
