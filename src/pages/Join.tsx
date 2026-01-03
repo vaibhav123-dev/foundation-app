@@ -89,6 +89,19 @@ const JoinPage = () => {
 
   const onSubmit = async (data: JoinFormData) => {
     try {
+      // Check for duplicate members
+      const duplicateCheck = await membersService.checkDuplicate(data.email, data.name);
+      
+      if (duplicateCheck.isDuplicate) {
+        const field = duplicateCheck.field === 'email' ? 'email address' : 'name';
+        toast({
+          title: 'Duplicate Member',
+          description: `A member with this ${field} already exists. Please use a different ${field}.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       const joinedDate = new Date().toISOString();
       
       // Add member to database and get the member ID
@@ -305,7 +318,7 @@ const JoinPage = () => {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="contact"
-                        placeholder="+91 98765 43210"
+                        placeholder="+91 8007298143"
                         className="pl-10"
                         {...register('contact')}
                       />

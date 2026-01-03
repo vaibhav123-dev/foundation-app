@@ -7,7 +7,7 @@ import type { Event } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type FilterType = 'all' | 'upcoming' | 'past';
+type FilterType = 'all' | 'upcoming' | 'ongoing' | 'completed';
 
 const EventsPage = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -29,7 +29,8 @@ const EventsPage = () => {
   });
 
   const upcomingCount = events.filter((e) => e.status === 'upcoming').length;
-  const pastCount = events.filter((e) => e.status === 'past').length;
+  const ongoingCount = events.filter((e) => e.status === 'ongoing').length;
+  const completedCount = events.filter((e) => e.status === 'completed').length;
 
   if (loading) {
     return (
@@ -65,7 +66,8 @@ const EventsPage = () => {
             {[
               { value: 'all', label: `All Events (${events.length})` },
               { value: 'upcoming', label: `Upcoming (${upcomingCount})` },
-              { value: 'past', label: `Past (${pastCount})` },
+              { value: 'ongoing', label: `Ongoing (${ongoingCount})` },
+              { value: 'completed', label: `Completed (${completedCount})` },
             ].map((tab) => (
               <Button
                 key={tab.value}

@@ -39,5 +39,23 @@ service cloud.firestore {
       allow create: if true; // Anyone can submit a message
       allow update, delete: if true; // Allow admin to manage messages
     }
+    
+    // Site Settings - Public read, admin can update
+    match /siteSettings/{docId} {
+      allow read: if true;
+      allow write: if true; // Allow admin to update site settings
+    }
+    
+    // News collection - Public read, admin can manage
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if true; // Allow admin operations (create, update, delete)
+    }
+    
+    // Testimonials collection - Public read, admin can manage
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow write: if true; // Allow admin operations (create, update, delete)
+    }
   }
 }

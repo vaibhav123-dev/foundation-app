@@ -10,9 +10,10 @@ const navLinks = [
   { href: '/members', label: 'Members' },
   { href: '/join', label: 'Join Us' },
   { href: '/events', label: 'Events' },
-  { href: '/founders', label: 'Founders' },
-  { href: '/contact', label: 'Contact' },
-];
+    { href: '/founders', label: 'Founders' },
+    { href: '/news', label: 'News' },
+    { href: '/contact', label: 'Contact' },
+  ];
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);

@@ -44,9 +44,13 @@ import {
   eventsService,
   socialWorkService,
   contactInfoService,
+  siteSettingsService,
+  newsService,
+  type SiteSettings,
 } from '@/lib/firebaseService';
-import type { Member, Founder, Event, SocialWork, ContactInfo } from '@/data/mockData';
+import type { Member, Founder, Event, SocialWork, ContactInfo, NewsArticle } from '@/data/mockData';
 import { cn } from '@/lib/utils';
+import { compressImage, isImageFile, formatBytes } from '@/lib/imageOptimization';
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -58,13 +62,44 @@ const AdminPage = () => {
   const [founders, setFounders] = useState<Founder[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [socialWorks, setSocialWorks] = useState<SocialWork[]>([]);
+  const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
   const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Edit dialog states
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editingSocialWork, setEditingSocialWork] = useState<SocialWork | null>(null);
   const [editingFounder, setEditingFounder] = useState<Founder | null>(null);
+  const [editingNews, setEditingNews] = useState<NewsArticle | null>(null);
+
+  // File upload states for Events
+  const [eventImageFile, setEventImageFile] = useState<File | null>(null);
+  const [eventImagePreview, setEventImagePreview] = useState<string | null>(null);
+  const [editEventImageFile, setEditEventImageFile] = useState<File | null>(null);
+  const [editEventImagePreview, setEditEventImagePreview] = useState<string | null>(null);
+
+  // File upload states for Social Work
+  const [workImageFile, setWorkImageFile] = useState<File | null>(null);
+  const [workImagePreview, setWorkImagePreview] = useState<string | null>(null);
+  const [editWorkImageFile, setEditWorkImageFile] = useState<File | null>(null);
+  const [editWorkImagePreview, setEditWorkImagePreview] = useState<string | null>(null);
+
+  // File upload states for Founders
+  const [founderPhotoFile, setFounderPhotoFile] = useState<File | null>(null);
+  const [founderPhotoPreview, setFounderPhotoPreview] = useState<string | null>(null);
+  const [editFounderPhotoFile, setEditFounderPhotoFile] = useState<File | null>(null);
+  const [editFounderPhotoPreview, setEditFounderPhotoPreview] = useState<string | null>(null);
+
+  // File upload states for Banner Images (multiple)
+  const [bannerImageFiles, setBannerImageFiles] = useState<File[]>([]);
+  const [bannerImagePreviews, setBannerImagePreviews] = useState<string[]>([]);
+
+  // File upload states for News
+  const [newsImageFile, setNewsImageFile] = useState<File | null>(null);
+  const [newsImagePreview, setNewsImagePreview] = useState<string | null>(null);
+  const [editNewsImageFile, setEditNewsImageFile] = useState<File | null>(null);
+  const [editNewsImagePreview, setEditNewsImagePreview] = useState<string | null>(null);
 
   // Load data from Firebase
   useEffect(() => {
@@ -74,9 +109,13 @@ const AdminPage = () => {
     const unsubFounders = foundersService.subscribe((data) => setFounders(data));
     const unsubEvents = eventsService.subscribe((data) => setEvents(data));
     const unsubSocialWork = socialWorkService.subscribe((data) => setSocialWorks(data));
+    const unsubNews = newsService.subscribe((data) => {
+      setNewsArticles(data);
+    });
     const unsubContact = contactInfoService.subscribe((data) => setContactInfo(data));
+    const unsubSiteSettings = siteSettingsService.subscribe((data) => setSiteSettings(data));
 
-    unsubscribers = [unsubMembers, unsubFounders, unsubEvents, unsubSocialWork, unsubContact];
+    unsubscribers = [unsubMembers, unsubFounders, unsubEvents, unsubSocialWork, unsubNews, unsubContact, unsubSiteSettings];
     
     // Set loading false after a short delay
     setTimeout(() => setLoading(false), 1000);
@@ -178,8 +217,426 @@ const AdminPage = () => {
     }
   };
 
+  // Event image file handlers
+  const handleEventImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setEventImageFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEventImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
+  const handleEditEventImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setEditEventImageFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditEventImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
+  // Social work image file handlers
+  const handleWorkImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setWorkImageFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setWorkImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
+  const handleEditWorkImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setEditWorkImageFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditWorkImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
+  // Founder photo file handlers
+  const handleFounderPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setFounderPhotoFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFounderPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
+  const handleEditFounderPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setEditFounderPhotoFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditFounderPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
+  // Banner images file handler (multiple)
+  const handleBannerImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const file of files) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: `${file.name} is not a valid image file`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: `${file.name} is larger than 5MB`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      toast({
+        title: 'Compressing images...',
+        description: `Processing ${file.name}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      validFiles.push(compressedFile);
+
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed',
+          description: `${file.name}: ${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews.push(reader.result as string);
+        if (newPreviews.length === validFiles.length) {
+          setBannerImagePreviews(prev => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+
+    setBannerImageFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const handleRemoveBannerPreview = (index: number) => {
+    setBannerImageFiles(prev => prev.filter((_, i) => i !== index));
+    setBannerImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // News image file handlers
+  const handleNewsImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setNewsImageFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewsImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
+  const handleEditNewsImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isImageFile(file)) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Compressing image...',
+        description: `Original size: ${formatBytes(file.size)}`,
+      });
+
+      const compressedFile = await compressImage(file);
+      setEditNewsImageFile(compressedFile);
+      
+      if (compressedFile.size < file.size) {
+        toast({
+          title: 'Image compressed successfully',
+          description: `${formatBytes(file.size)} → ${formatBytes(compressedFile.size)}`,
+        });
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditNewsImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    }
+  };
+
   const handleAddEvent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!eventImageFile) {
+      toast({
+        title: 'Image Required',
+        description: 'Please select an image for the event.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     
     const newEvent: Omit<Event, 'id'> = {
@@ -188,17 +645,19 @@ const AdminPage = () => {
       date: formData.get('date') as string,
       time: formData.get('time') as string,
       location: formData.get('location') as string,
-      imageURL: formData.get('imageURL') as string,
-      status: 'upcoming',
+      imageURL: '',
+      status: formData.get('status') as 'upcoming' | 'ongoing' | 'completed',
     };
 
     try {
-      await eventsService.add(newEvent);
+      await eventsService.add(newEvent, eventImageFile);
       toast({
         title: 'Event Created',
         description: 'Event has been added successfully.',
       });
       (e.target as HTMLFormElement).reset();
+      setEventImageFile(null);
+      setEventImagePreview(null);
     } catch (error) {
       console.error('Error creating event:', error);
       toast({
@@ -211,23 +670,35 @@ const AdminPage = () => {
 
   const handleAddSocialWork = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!workImageFile) {
+      toast({
+        title: 'Image Required',
+        description: 'Please select an image for the initiative.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     
     const newWork: Omit<SocialWork, 'id'> = {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
-      imageURL: formData.get('imageURL') as string,
+      imageURL: '',
       status: formData.get('status') as 'ongoing' | 'completed',
       date: new Date().toISOString(),
     };
 
     try {
-      await socialWorkService.add(newWork);
+      await socialWorkService.add(newWork, workImageFile);
       toast({
         title: 'Initiative Added',
         description: 'Social work entry has been created.',
       });
       (e.target as HTMLFormElement).reset();
+      setWorkImageFile(null);
+      setWorkImagePreview(null);
     } catch (error) {
       console.error('Error creating social work:', error);
       toast({
@@ -240,6 +711,16 @@ const AdminPage = () => {
 
   const handleAddFounder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!founderPhotoFile) {
+      toast({
+        title: 'Photo Required',
+        description: 'Please select a photo for the founder.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     
     const newFounder: Omit<Founder, 'id'> = {
@@ -247,16 +728,18 @@ const AdminPage = () => {
       role: formData.get('role') as string,
       description: formData.get('description') as string,
       contact: formData.get('contact') as string,
-      photoURL: formData.get('photoURL') as string,
+      photoURL: '',
     };
 
     try {
-      await foundersService.add(newFounder);
+      await foundersService.add(newFounder, founderPhotoFile);
       toast({
         title: 'Founder Added',
         description: 'Founder profile has been created.',
       });
       (e.target as HTMLFormElement).reset();
+      setFounderPhotoFile(null);
+      setFounderPhotoPreview(null);
     } catch (error) {
       console.error('Error creating founder:', error);
       toast({
@@ -278,16 +761,17 @@ const AdminPage = () => {
       date: formData.get('date') as string,
       time: formData.get('time') as string,
       location: formData.get('location') as string,
-      imageURL: formData.get('imageURL') as string,
     };
 
     try {
-      await eventsService.update(editingEvent.id, updates);
+      await eventsService.update(editingEvent.id, updates, editEventImageFile || undefined);
       toast({
         title: 'Event Updated',
         description: 'Event has been updated successfully.',
       });
       setEditingEvent(null);
+      setEditEventImageFile(null);
+      setEditEventImagePreview(null);
     } catch (error) {
       console.error('Error updating event:', error);
       toast({
@@ -306,17 +790,18 @@ const AdminPage = () => {
     const updates: Partial<SocialWork> = {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
-      imageURL: formData.get('imageURL') as string,
       status: formData.get('status') as 'ongoing' | 'completed',
     };
 
     try {
-      await socialWorkService.update(editingSocialWork.id, updates);
+      await socialWorkService.update(editingSocialWork.id, updates, editWorkImageFile || undefined);
       toast({
         title: 'Initiative Updated',
         description: 'Social work has been updated successfully.',
       });
       setEditingSocialWork(null);
+      setEditWorkImageFile(null);
+      setEditWorkImagePreview(null);
     } catch (error) {
       console.error('Error updating social work:', error);
       toast({
@@ -337,16 +822,17 @@ const AdminPage = () => {
       role: formData.get('role') as string,
       description: formData.get('description') as string,
       contact: formData.get('contact') as string,
-      photoURL: formData.get('photoURL') as string,
     };
 
     try {
-      await foundersService.update(editingFounder.id, updates);
+      await foundersService.update(editingFounder.id, updates, editFounderPhotoFile || undefined);
       toast({
         title: 'Founder Updated',
         description: 'Founder profile has been updated successfully.',
       });
       setEditingFounder(null);
+      setEditFounderPhotoFile(null);
+      setEditFounderPhotoPreview(null);
     } catch (error) {
       console.error('Error updating founder:', error);
       toast({
@@ -381,6 +867,53 @@ const AdminPage = () => {
       toast({
         title: 'Error',
         description: 'Failed to update contact information.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAddBannerImages = async () => {
+    if (bannerImageFiles.length === 0) {
+      toast({
+        title: 'No Images Selected',
+        description: 'Please select at least one image for the banner.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await siteSettingsService.addBannerImages(bannerImageFiles);
+      toast({
+        title: 'Banners Added',
+        description: `${bannerImageFiles.length} banner image(s) have been added successfully.`,
+      });
+      setBannerImageFiles([]);
+      setBannerImagePreviews([]);
+    } catch (error) {
+      console.error('Error adding banner images:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add banner images.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRemoveExistingBanner = async (imageURL: string) => {
+    if (!confirm('Are you sure you want to remove this banner image?')) return;
+
+    try {
+      await siteSettingsService.removeBannerImage(imageURL);
+      toast({
+        title: 'Banner Removed',
+        description: 'Banner image has been removed successfully.',
+      });
+    } catch (error) {
+      console.error('Error removing banner:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove banner image.',
         variant: 'destructive',
       });
     }
@@ -450,15 +983,18 @@ const AdminPage = () => {
 
         {/* Admin Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:w-auto lg:inline-grid mb-8">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="social-work">Social Work</TabsTrigger>
-            <TabsTrigger value="founders">Founders</TabsTrigger>
-            <TabsTrigger value="contact">Contact Info</TabsTrigger>
-          </TabsList>
-
+          <div className="mb-8">
+            <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 lg:w-auto lg:inline-grid gap-2">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="members">Members</TabsTrigger>
+              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="social-work">Social Work</TabsTrigger>
+              <TabsTrigger value="news">News</TabsTrigger>
+              <TabsTrigger value="founders">Founders</TabsTrigger>
+              <TabsTrigger value="contact">Contact Info</TabsTrigger>
+              <TabsTrigger value="site-settings" className="md:ml-0 ml-8">Banner</TabsTrigger>
+            </TabsList>
+          </div>
           {/* Overview Tab */}
           <TabsContent value="overview">
             <div className="grid gap-6 lg:grid-cols-2">
@@ -635,9 +1171,39 @@ const AdminPage = () => {
                         <Input id="event-location" name="location" placeholder="Event location" required />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="event-image">Image URL</Label>
-                        <Input id="event-image" name="imageURL" type="url" placeholder="https://example.com/image.jpg" required />
-                        <p className="text-xs text-muted-foreground">Paste a URL to an image (since Storage is not enabled)</p>
+                        <Label htmlFor="event-status">Status</Label>
+                        <select id="event-status" name="status" className="w-full h-10 px-3 rounded-md border border-input bg-background" required>
+                          <option value="upcoming">Upcoming</option>
+                          <option value="ongoing">Ongoing</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Event Image</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="h-24 w-32 rounded bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
+                            {eventImagePreview ? (
+                              <img
+                                src={eventImagePreview}
+                                alt="Preview"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Calendar className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleEventImageChange}
+                              className="cursor-pointer"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              JPG, PNG up to 5MB
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       <Button type="submit" className="w-full">
                         Create Event
@@ -749,9 +1315,31 @@ const AdminPage = () => {
                         </select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="work-image">Image URL</Label>
-                        <Input id="work-image" name="imageURL" type="url" placeholder="https://example.com/image.jpg" required />
-                        <p className="text-xs text-muted-foreground">Paste a URL to an image</p>
+                        <Label>Initiative Image</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="h-24 w-32 rounded bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
+                            {workImagePreview ? (
+                              <img
+                                src={workImagePreview}
+                                alt="Preview"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Heart className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleWorkImageChange}
+                              className="cursor-pointer"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              JPG, PNG up to 5MB
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       <Button type="submit" className="w-full">
                         Add Initiative
@@ -812,6 +1400,228 @@ const AdminPage = () => {
             </Card>
           </TabsContent>
 
+          {/* News Tab */}
+          <TabsContent value="news">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="space-y-1">
+                  <CardTitle>News Management</CardTitle>
+                  <CardDescription>Create and manage news articles</CardDescription>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add News Article
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Create News Article</DialogTitle>
+                      <DialogDescription>Add a new news article or announcement</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      
+                      if (!newsImageFile) {
+                        toast({
+                          title: 'Image Required',
+                          description: 'Please select an image for the article.',
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+
+                      const formData = new FormData(e.currentTarget);
+                      const title = formData.get('title') as string;
+                      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                      
+                      const newArticle: Omit<NewsArticle, 'id'> = {
+                        title,
+                        slug,
+                        excerpt: formData.get('excerpt') as string,
+                        content: formData.get('content') as string,
+                        imageURL: '',
+                        author: formData.get('author') as string,
+                        category: formData.get('category') as string,
+                        status: formData.get('status') as 'draft' | 'published',
+                        publishedDate: new Date().toISOString(),
+                      };
+
+                      try {
+                        await newsService.add(newArticle, newsImageFile);
+                        toast({
+                          title: 'Article Created',
+                          description: 'News article has been added successfully.',
+                        });
+                        (e.target as HTMLFormElement).reset();
+                        setNewsImageFile(null);
+                        setNewsImagePreview(null);
+                      } catch (error: any) {
+                        console.error('Error creating article:', error);
+                        toast({
+                          title: 'Error',
+                          description: error?.message || 'Failed to create article. Please check console for details.',
+                          variant: 'destructive',
+                        });
+                      }
+                    }} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="news-title">Title</Label>
+                        <Input id="news-title" name="title" placeholder="Article title" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="news-excerpt">Excerpt</Label>
+                        <Textarea id="news-excerpt" name="excerpt" placeholder="Brief summary (shown in listings)" required rows={2} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="news-content">Content</Label>
+                        <Textarea id="news-content" name="content" placeholder="Full article content" required rows={6} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Article Image</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="h-24 w-32 rounded bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
+                            {newsImagePreview ? (
+                              <img
+                                src={newsImagePreview}
+                                alt="Preview"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Calendar className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleNewsImageChange}
+                              className="cursor-pointer"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              JPG, PNG up to 5MB
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="news-author">Author</Label>
+                          <Input id="news-author" name="author" placeholder="Author name" required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="news-category">Category</Label>
+                          <select id="news-category" name="category" className="w-full h-10 px-3 rounded-md border border-input bg-background" required>
+                            <option value="Event">Event</option>
+                            <option value="Achievement">Achievement</option>
+                            <option value="Announcement">Announcement</option>
+                            <option value="Community">Community</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="news-status">Status</Label>
+                        <select id="news-status" name="status" className="w-full h-10 px-3 rounded-md border border-input bg-background" required>
+                          <option value="draft">Draft</option>
+                          <option value="published">Published</option>
+                        </select>
+                      </div>
+                      <Button type="submit" className="w-full">
+                        Create Article
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Article</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Author</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Published</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {newsArticles.map((article) => (
+                        <TableRow key={article.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={article.imageURL}
+                                alt={article.title}
+                                className="h-12 w-16 rounded object-cover"
+                              />
+                              <div className="max-w-[200px]">
+                                <p className="font-medium truncate">{article.title}</p>
+                                <p className="text-xs text-muted-foreground truncate">{article.excerpt}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{article.category}</Badge>
+                          </TableCell>
+                          <TableCell>{article.author}</TableCell>
+                          <TableCell>
+                            <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                              {article.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(article.publishedDate).toLocaleDateString('en-IN')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setEditingNews(article)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              onClick={async () => {
+                                if (!confirm('Are you sure you want to delete this article?')) return;
+                                try {
+                                  await newsService.delete(article.id, article.imageURL);
+                                  toast({
+                                    title: 'Article Deleted',
+                                    description: 'News article has been removed.',
+                                  });
+                                } catch (error) {
+                                  toast({
+                                    title: 'Error',
+                                    description: 'Failed to delete article.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {newsArticles.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">No news articles yet</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Founders Tab */}
           <TabsContent value="founders">
             <Card>
@@ -850,9 +1660,31 @@ const AdminPage = () => {
                         <Input id="founder-contact" name="contact" placeholder="+91 98765 43210" required />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="founder-photo">Photo URL</Label>
-                        <Input id="founder-photo" name="photoURL" type="url" placeholder="https://example.com/photo.jpg" required />
-                        <p className="text-xs text-muted-foreground">Paste a URL to a photo</p>
+                        <Label>Founder Photo</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
+                            {founderPhotoPreview ? (
+                              <img
+                                src={founderPhotoPreview}
+                                alt="Preview"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <UserCog className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFounderPhotoChange}
+                              className="cursor-pointer"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              JPG, PNG up to 5MB
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       <Button type="submit" className="w-full">
                         Add Founder
@@ -973,6 +1805,100 @@ const AdminPage = () => {
                     </Button>
                   </form>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Site Settings Tab */}
+          <TabsContent value="site-settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Site Settings</CardTitle>
+                <CardDescription>Manage website appearance and settings</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8 max-w-xl">
+                {/* Banner Image Section */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Hero Banner Image</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Upload a new banner image for the landing page hero section
+                    </p>
+                  </div>
+                  
+                  {/* Current Banner Images */}
+                  {siteSettings?.bannerImages && siteSettings.bannerImages.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Current Banner Images ({siteSettings.bannerImages.length})</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        {siteSettings.bannerImages.map((imageURL, index) => (
+                          <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
+                            <img
+                              src={imageURL}
+                              alt={`Banner ${index + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleRemoveExistingBanner(imageURL)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* New Banner Images Upload (Multiple) */}
+                  <div className="space-y-2">
+                    <Label>Add New Banner Images</Label>
+                    <div className="space-y-4">
+                      {/* Preview selected images */}
+                      {bannerImagePreviews.length > 0 && (
+                        <div className="grid grid-cols-2 gap-4">
+                          {bannerImagePreviews.map((preview, index) => (
+                            <div key={index} className="relative aspect-video rounded-lg overflow-hidden border group">
+                              <img
+                                src={preview}
+                                alt={`Preview ${index + 1}`}
+                                className="h-full w-full object-cover"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleRemoveBannerPreview(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* File input */}
+                      <div>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleBannerImagesChange}
+                          className="cursor-pointer"
+                        />
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Select multiple images (Recommended: 1200x800px or larger, JPG/PNG up to 5MB each)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button onClick={handleAddBannerImages} disabled={bannerImageFiles.length === 0}>
+                    Add Banner Images ({bannerImageFiles.length})
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1103,6 +2029,122 @@ const AdminPage = () => {
                 </Button>
                 <Button type="submit" className="flex-1">
                   Update Founder
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit News Dialog */}
+      <Dialog open={!!editingNews} onOpenChange={() => setEditingNews(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit News Article</DialogTitle>
+            <DialogDescription>Update news article details</DialogDescription>
+          </DialogHeader>
+          {editingNews && (
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const updates: Partial<NewsArticle> = {
+                title: formData.get('title') as string,
+                excerpt: formData.get('excerpt') as string,
+                content: formData.get('content') as string,
+                author: formData.get('author') as string,
+                category: formData.get('category') as string,
+                status: formData.get('status') as 'draft' | 'published',
+              };
+
+              try {
+                await newsService.update(editingNews.id, updates, editNewsImageFile || undefined);
+                toast({
+                  title: 'Article Updated',
+                  description: 'News article has been updated successfully.',
+                });
+                setEditingNews(null);
+                setEditNewsImageFile(null);
+                setEditNewsImagePreview(null);
+              } catch (error) {
+                console.error('Error updating article:', error);
+                toast({
+                  title: 'Error',
+                  description: 'Failed to update article.',
+                  variant: 'destructive',
+                });
+              }
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-news-title">Title</Label>
+                <Input id="edit-news-title" name="title" defaultValue={editingNews.title} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-news-excerpt">Excerpt</Label>
+                <Textarea id="edit-news-excerpt" name="excerpt" defaultValue={editingNews.excerpt} required rows={2} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-news-content">Content</Label>
+                <Textarea id="edit-news-content" name="content" defaultValue={editingNews.content} required rows={6} />
+              </div>
+              <div className="space-y-2">
+                <Label>Article Image</Label>
+                <div className="flex items-center gap-4">
+                  <div className="h-24 w-32 rounded bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
+                    {editNewsImagePreview ? (
+                      <img
+                        src={editNewsImagePreview}
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={editingNews.imageURL}
+                        alt="Current"
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditNewsImageChange}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      JPG, PNG up to 5MB (optional - leave empty to keep current image)
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-news-author">Author</Label>
+                  <Input id="edit-news-author" name="author" defaultValue={editingNews.author} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-news-category">Category</Label>
+                  <select id="edit-news-category" name="category" defaultValue={editingNews.category} className="w-full h-10 px-3 rounded-md border border-input bg-background" required>
+                    <option value="Event">Event</option>
+                    <option value="Achievement">Achievement</option>
+                    <option value="Announcement">Announcement</option>
+                    <option value="Community">Community</option>
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-news-status">Status</Label>
+                <select id="edit-news-status" name="status" defaultValue={editingNews.status} className="w-full h-10 px-3 rounded-md border border-input bg-background" required>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setEditingNews(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Update Article
                 </Button>
               </div>
             </form>

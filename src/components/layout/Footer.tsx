@@ -71,13 +71,17 @@ export function Footer() {
           {/* Social */}
           <div>
             <h4 className="font-display text-lg font-semibold mb-4">Follow Us</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Stay updated with our latest activities and events
+            </p>
             <div className="flex gap-3">
               {contactInfo.facebook && (
                 <a
                   href={contactInfo.facebook}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                  aria-label="Follow us on Facebook"
                 >
                   <Facebook className="h-5 w-5" />
                 </a>
@@ -87,7 +91,8 @@ export function Footer() {
                   href={contactInfo.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                  aria-label="Follow us on Instagram"
                 >
                   <Instagram className="h-5 w-5" />
                 </a>
@@ -97,7 +102,8 @@ export function Footer() {
                   href={contactInfo.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110"
+                  aria-label="Follow us on Twitter"
                 >
                   <Twitter className="h-5 w-5" />
                 </a>

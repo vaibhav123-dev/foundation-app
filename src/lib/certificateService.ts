@@ -129,7 +129,7 @@ export const generateCertificate = async (data: CertificateData): Promise<Blob> 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('Founder/Chairman', pageWidth - 60, pageHeight - 32, { align: 'center' });
+  doc.text('Founder', pageWidth - 60, pageHeight - 32, { align: 'center' });
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('Pranay Rode', pageWidth - 60, pageHeight - 27, { align: 'center' });

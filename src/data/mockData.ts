@@ -37,7 +37,7 @@ export interface Event {
   imageURL: string;
   date: string;
   time: string;
-  status: 'upcoming' | 'past';
+  status: 'upcoming' | 'ongoing' | 'completed';
   location: string;
 }
 
@@ -45,9 +45,33 @@ export interface ContactInfo {
   address: string;
   phone: string;
   email: string;
-  facebook?: string;
-  instagram?: string;
-  twitter?: string;
+  facebook: string;
+  instagram: string;
+  twitter: string;
+}
+
+export interface Testimonial {
+  id: string;
+  name: string;
+  role: string; // e.g., "Member", "Volunteer", "Beneficiary"
+  message: string;
+  photoURL: string;
+  rating: number; // 1-5 stars
+  date: string;
+}
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  slug: string; // URL-friendly version of title
+  excerpt: string; // Short summary
+  content: string; // Full article content (markdown supported)
+  imageURL: string;
+  author: string;
+  category: string; // e.g., "Event", "Achievement", "Announcement", "Community"
+  publishedDate: string;
+  status: 'draft' | 'published';
+  views?: number;
 }
 
 export const founders: Founder[] = [
@@ -213,7 +237,7 @@ export const events: Event[] = [
     imageURL: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&h=600&fit=crop',
     date: '2023-11-15',
     time: '9:00 AM',
-    status: 'past',
+    status: 'completed',
     location: 'Civil Hospital, Amritsar',
   },
   {
@@ -223,7 +247,7 @@ export const events: Event[] = [
     imageURL: 'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=800&h=600&fit=crop',
     date: '2023-11-12',
     time: '5:00 PM',
-    status: 'past',
+    status: 'completed',
     location: 'Bal Ashram, Jalandhar',
   },
 ];
